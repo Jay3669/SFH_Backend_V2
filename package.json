@@ -1,0 +1,40 @@
+{
+  "name": "sfh_backend",
+  "version": "1.0.0",
+  "description": "SFH backend API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "seed:admin": "node src/scripts/createAdmin.js",
+    "seed:test-data": "node src/scripts/seedTestData.js",
+    "seed:realistic": "node seeders/masterSeeder.js",
+    "migrate:014": "node seeders/applyOneMigration.js migrations/014_production_sales_model_alignment.sql",
+    "migrate:015": "node seeders/applyOneMigration.js migrations/015_cash_drawers.sql",
+    "migrate:016": "node seeders/applyOneMigration.js migrations/016_staff_mobile_enhancements.sql",
+    "migrate:017": "node seeders/applyOneMigration.js migrations/017_staff_profit_sharing.sql",
+    "migrate:018": "node seeders/applyOneMigration.js migrations/018_staff_management_profile_fields.sql",
+    "migrate:019": "node seeders/applyOneMigration.js migrations/019_staff_role_permissions.sql",
+    "migrate:020": "node seeders/applyOneMigration.js migrations/020_stock_category_image_display_order.sql",
+    "migrate:021": "node seeders/applyOneMigration.js migrations/021_stock_category_code.sql",
+    "migrate:022": "node seeders/applyOneMigration.js migrations/022_stock_item_fields.sql",
+    "migrate:023": "node seeders/applyOneMigration.js migrations/023_stock_category_ordering.sql",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.6.0",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.5"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}
