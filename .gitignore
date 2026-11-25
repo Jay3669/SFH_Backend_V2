@@ -4,4 +4,4 @@
 .pnp.js
 
 /logs/*.log
-# .env
+.env
