@@ -13,7 +13,7 @@ const StockItem = sequelize.define(
         itemCode: {
             type: DataTypes.STRING(32),
             allowNull: false,
-            defaultValue: literal("'ITM-' || CASE WHEN nextval('public.stock_item_code_seq'::regclass) < 1000000 THEN lpad(currval('public.stock_item_code_seq'::regclass)::text, 6, '0') ELSE currval('public.stock_item_code_seq'::regclass)::text END"),
+            defaultValue: literal(`'ITM-' || CASE WHEN nextval('${schema}.stock_item_code_seq'::regclass) < 1000000 THEN lpad(currval('${schema}.stock_item_code_seq'::regclass)::text, 6, '0') ELSE currval('${schema}.stock_item_code_seq'::regclass)::text END`),
             field: 'item_code',
         },
         name: {

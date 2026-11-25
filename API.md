@@ -7,9 +7,11 @@ Responses have the form `{ statusCode, status, message, data? }`.
 ## Initial admin and database setup
 
 Configure PostgreSQL with `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`,
-`DB_USER`, and `DB_PASSWORD`. `DB_SCHEMA` defaults to `public`; set `DB_SSL=true`
+`DB_USER`, and `DB_PASSWORD`. `DB_SCHEMA` defaults to `public`; migrations run
+through `seeders/applyOneMigration.js` are applied to that schema. Set `DB_SSL=true`
 when the database requires TLS. On Render, set `DATABASE_URL` to the PostgreSQL
-internal connection URL and configure `JWT_ACCESS_SECRET` (at least 32 characters;
+internal connection URL, set `DB_SCHEMA=sfh` if using the `sfh` schema, and configure
+`JWT_ACCESS_SECRET` (at least 32 characters;
 `JWT_SECRET` is also accepted). Set `JWT_ACCESS_EXPIRES_IN=8h` for an 8-hour
 access token; this setting controls JWT signing and the login/refresh response
 and defaults to `8h`. `JWT_ACCESS_TTL` is accepted as a compatibility fallback.
@@ -49,8 +51,7 @@ For an existing database, apply `migrations/001_user_registration_identifiers.sq
 `migrations/002_authentication_user_management.sql`, and
 `migrations/003_user_first_last_name.sql` before using the new authentication
 endpoints. Migration 003 splits existing `name` values at the first whitespace;
-review one-word names after migration. The migrations target the `public`
-schema; update their schema references if `DB_SCHEMA` is different. Resolve
+review one-word names after migration. The migration runner applies migrations to `DB_SCHEMA`. Resolve
 existing email addresses that differ only by case and phone numbers that differ
 only by formatting before applying the unique indexes. Fresh databases receive
 their tables from Sequelize sync and the role/permission defaults at startup.

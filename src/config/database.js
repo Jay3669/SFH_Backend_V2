@@ -1,6 +1,6 @@
-import { connectDatabase, sequelize } from './db.js';
+import { connectDatabase, schema, sequelize } from './db.js';
 
-export { sequelize };
+export { schema, sequelize };
 
 export default {
     sequelize,

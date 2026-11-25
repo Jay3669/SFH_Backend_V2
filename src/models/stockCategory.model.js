@@ -16,7 +16,7 @@ const StockCategory = sequelize.define(
         categoryCode: {
             type: DataTypes.STRING(32),
             allowNull: false,
-            defaultValue: literal("'CAT-' || CASE WHEN nextval('public.stock_category_code_seq'::regclass) < 1000000 THEN lpad(currval('public.stock_category_code_seq'::regclass)::text, 6, '0') ELSE currval('public.stock_category_code_seq'::regclass)::text END"),
+            defaultValue: literal(`'CAT-' || CASE WHEN nextval('${schema}.stock_category_code_seq'::regclass) < 1000000 THEN lpad(currval('${schema}.stock_category_code_seq'::regclass)::text, 6, '0') ELSE currval('${schema}.stock_category_code_seq'::regclass)::text END`),
             field: 'category_code',
         },
         description: {
