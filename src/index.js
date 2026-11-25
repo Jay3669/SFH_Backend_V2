@@ -4,6 +4,27 @@ import { createLogger } from './utils/logger.js';
 dotenv.config();
 
 const logger = createLogger('Server');
+const getStartupErrorDetails = (error) => {
+    const details = [];
+    const visited = new Set();
+    let current = error;
+
+    while (current && typeof current === 'object' && !visited.has(current) && details.length < 5) {
+        visited.add(current);
+        details.push({
+            name: current.name || 'Error',
+            message: current.message || '(empty error message)',
+            ...(current.code ? { code: current.code } : {}),
+        });
+        current = current.cause || current.original || current.parent;
+    }
+
+    if (details.length === 0) {
+        details.push({ name: typeof error, message: String(error) });
+    }
+    return details;
+};
+
 const startServer = async () => {
     const jwtSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
     if (!jwtSecret || jwtSecret.length < 32) {
@@ -27,6 +48,6 @@ const startServer = async () => {
 };
 
 startServer().catch((error) => {
-    logger.error('Server startup failed', { error: error.message });
+    logger.error('Server startup failed', { errors: getStartupErrorDetails(error) });
     process.exitCode = 1;
 });

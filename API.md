@@ -7,7 +7,9 @@ Responses have the form `{ statusCode, status, message, data? }`.
 ## Initial admin and database setup
 
 Configure PostgreSQL with `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`,
-`DB_USER`, and `DB_PASSWORD`. Set `JWT_ACCESS_SECRET` (at least 32 characters;
+`DB_USER`, and `DB_PASSWORD`. `DB_SCHEMA` defaults to `public`; set `DB_SSL=true`
+when the database requires TLS. On Render, set `DATABASE_URL` to the PostgreSQL
+internal connection URL and configure `JWT_ACCESS_SECRET` (at least 32 characters;
 `JWT_SECRET` is also accepted). Set `JWT_ACCESS_EXPIRES_IN=8h` for an 8-hour
 access token; this setting controls JWT signing and the login/refresh response
 and defaults to `8h`. `JWT_ACCESS_TTL` is accepted as a compatibility fallback.

@@ -4,37 +4,40 @@ import { logger } from '../utils/logger.js';
 
 dotenv.config();
 
+const databaseUrl = process.env.DATABASE_URL;
 const database = process.env.DB_NAME;
-export const schema = process.env.DB_SCHEMA
+export const schema = process.env.DB_SCHEMA || 'public';
 const username = process.env.DB_USER;
 const password = process.env.DB_PASSWORD;
 const host = process.env.DB_HOST;
-const port = Number(process.env.DB_PORT);
+const port = process.env.DB_PORT === undefined ? 5432 : Number(process.env.DB_PORT);
 const sslEnabled = process.env.DB_SSL === 'true';
 
-if (!username || !password) {
-    throw new Error('DB_USER and DB_PASSWORD must be set in the environment.');
+if (!databaseUrl && (!database || !username || !password || !host)) {
+    throw new Error('Set DATABASE_URL or configure DB_HOST, DB_NAME, DB_USER, and DB_PASSWORD.');
 }
 
 if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(schema)) {
     throw new Error('DB_SCHEMA must be a valid PostgreSQL schema identifier.');
 }
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
+if (!databaseUrl && (!Number.isInteger(port) || port < 1 || port > 65535)) {
     throw new Error('DB_PORT must be a valid TCP port.');
 }
 
-export const sequelize = new Sequelize(database, username, password, {
-    host,
-    port,
+const sequelizeOptions = {
     dialect: 'postgres',
     timezone: 'Asia/Kolkata',
     logging: false,
     dialectOptions: {
         options: `-c search_path=${schema}`,
-        ...(sslEnabled ? { ssl: { require: false } } : {}),
+        ...(sslEnabled ? { ssl: true } : {}),
     },
-});
+};
+
+export const sequelize = databaseUrl
+    ? new Sequelize(databaseUrl, sequelizeOptions)
+    : new Sequelize(database, username, password, { ...sequelizeOptions, host, port });
 
 export async function connectDatabase() {
     await sequelize.authenticate();
