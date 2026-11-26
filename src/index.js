@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { QueryTypes } from 'sequelize';
 import { createLogger } from './utils/logger.js';
 import { shouldSyncDatabase } from './config/databaseSettings.js';
+import { runPendingMigrations } from './services/migrationRunner.js';
 
 dotenv.config();
 
@@ -86,13 +87,17 @@ const startServer = async () => {
     const { initializeAssociations } = await import('./models/index.js');
     initializeAssociations();
     await database.connect();
-    logger.info('Checking stock code sequences.');
-    await ensureStockCodeSequences(database, schema);
     if (shouldSyncDatabase()) {
+        logger.info('Checking stock code sequences.');
+        await ensureStockCodeSequences(database, schema);
         logger.info('Synchronizing local database models.');
         await database.sync();
     } else {
-        logger.info('Skipping Sequelize sync; apply database migrations before production startup.');
+        logger.info('Applying pending database migrations.');
+        const appliedMigrations = await runPendingMigrations(database.sequelize, schema);
+        logger.info('Database migrations are up to date.', { appliedMigrations });
+        logger.info('Checking stock code sequences.');
+        await ensureStockCodeSequences(database, schema);
     }
     const { ensureAuthenticationSeedData } = await import('./services/authService.js');
     logger.info('Ensuring authentication roles and permissions.');

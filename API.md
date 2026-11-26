@@ -17,12 +17,17 @@ legacy `DB_*`/`DATABASE_URL` settings; `DB_ENV=production` also accepts those
 legacy names when no production-prefixed settings are supplied.
 `DB_SCHEMA` defaults to `public`; migrations run through
 `seeders/applyOneMigration.js` are applied to the selected profile's schema. Set
-the selected profile's `*_DB_SSL=true` when the database requires TLS. On Render,
-set `PRODUCTION_DATABASE_URL` to the PostgreSQL internal connection URL, set
-`PRODUCTION_DB_SCHEMA=sfh` if using the `sfh` schema, and apply all required
-migrations to the selected schema before starting. Automatic Sequelize sync is
-reserved for local development; production startup expects its schema to be
-managed by migrations.
+the selected profile's `*_DB_SSL=true` when the database requires TLS. On
+Render, set `PRODUCTION_DATABASE_URL` to the PostgreSQL internal connection
+URL and set `PRODUCTION_DB_SCHEMA=sfh` if using the `sfh` schema. Production
+startup applies pending numbered SQL migrations in order and records them in
+`schema_migrations`; automatic Sequelize sync remains reserved for local
+development. For an existing database whose migrations were applied before
+tracking was introduced, verify that it reflects every migration through
+version 023, then initialize its history once with
+`npm run migrate:baseline -- 023`. During this baseline, missing menu/cash-drawer
+tables are repaired by migrations 006, 007, and 015; other missing schema
+changes are not applied. Do not baseline a new or partially migrated database.
 `JWT_ACCESS_SECRET` (at least 32 characters;
 `JWT_SECRET` is also accepted). Set `JWT_ACCESS_EXPIRES_IN=8h` for an 8-hour
 access token; this setting controls JWT signing and the login/refresh response
@@ -175,14 +180,16 @@ availability, POS sales, closing, and expenses. Apply
 `migrations/010_drop_duplicate_user_indexes.sql` to remove duplicate
 non-constraint indexes on user email and phone while retaining their unique
 constraints. Apply `migrations/011_application_settings_and_split_payments.sql`
-to initialize shared billing settings, sequential invoice numbering, configurable
-charges, and split-payment snapshots. After the existing migrations, run
-`npm run migrate:024` to add generated menu category/item codes and menu item
-display ordering. For production, apply the menu migrations once, in order, from
-the backend directory with the production database profile selected:
-`npm run migrate:006`, `npm run migrate:007`, then `npm run migrate:024`.
-These create and update the menu tables; restarting the server does not create
-them because automatic Sequelize sync is disabled in production. Production
+to initialize shared billing settings, sequential invoice numbering,
+configurable charges, and split-payment snapshots. Migration 024 adds generated
+menu category/item codes and menu item display ordering. The production startup
+runner applies it automatically once earlier migrations are present in
+`schema_migrations`; `npm run migrate:menu` remains
+available for explicit, tracked application of migrations 006, 007, and 024.
+Migration 025 adds nullable menu-category `imageUrl` support; production startup
+applies it automatically after the previously recorded migrations.
+For local development, use `npm run dev`, which watches `src` and `migrations`
+and restarts the server when files change. Production
 permissions are seeded at startup: Admins and Managers can maintain production,
 close days, record expenses and read reports; Cashiers can read POS availability
 and complete cashier-confirmed bills; Employees can read recipes, preview and

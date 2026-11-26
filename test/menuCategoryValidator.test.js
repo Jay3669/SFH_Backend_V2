@@ -9,10 +9,12 @@ test('menu category creation trims values and accepts automatic display order', 
     assert.deepEqual(validateMenuCategoryInput({
         name: '  Breakfast  ',
         description: '  Served before noon  ',
+        imageUrl: ' https://example.com/breakfast.png ',
     }), {
         value: {
             name: 'Breakfast',
             description: 'Served before noon',
+            imageUrl: 'https://example.com/breakfast.png',
         },
     });
 });
@@ -21,8 +23,12 @@ test('menu category updates preserve omitted values and validate supplied fields
     assert.deepEqual(validateMenuCategoryInput({ description: null }, true), {
         value: { description: null },
     });
+    assert.deepEqual(validateMenuCategoryInput({ imageUrl: null }, true), {
+        value: { imageUrl: null },
+    });
     assert.match(validateMenuCategoryInput({ displayOrder: 1.5 }, true).error, /integer/);
     assert.match(validateMenuCategoryInput({ isActive: 'false' }, true).error, /boolean/);
+    assert.match(validateMenuCategoryInput({ imageUrl: 'x'.repeat(2049) }, true).error, /imageUrl/);
     assert.match(validateMenuCategoryInput({}, true).error, /at least one/);
 });
 

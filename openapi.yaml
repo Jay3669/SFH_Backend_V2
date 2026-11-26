@@ -480,6 +480,7 @@ components:
         id: { type: string, format: uuid }
         name: { type: string, maxLength: 80 }
         description: { type: string, nullable: true, maxLength: 255 }
+        imageUrl: { type: string, nullable: true, maxLength: 2048 }
         displayOrder: { type: integer, minimum: 0 }
         isActive: { type: boolean }
         menuItemCount: { type: integer, minimum: 0 }
@@ -490,6 +491,7 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 80 }
         description: { type: string, nullable: true, maxLength: 255 }
+        imageUrl: { type: string, nullable: true, maxLength: 2048 }
         displayOrder: { type: integer, minimum: 0 }
         isActive: { type: boolean, default: true }
     MenuCategoryUpdate:
@@ -499,6 +501,7 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 80 }
         description: { type: string, nullable: true, maxLength: 255 }
+        imageUrl: { type: string, nullable: true, maxLength: 2048 }
         displayOrder: { type: integer, minimum: 0 }
         isActive: { type: boolean }
     MenuCategoryResponse:

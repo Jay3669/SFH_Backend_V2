@@ -23,6 +23,11 @@ const MenuCategory = sequelize.define(
             type: DataTypes.STRING(255),
             allowNull: true
         },
+        imageUrl: {
+            type: DataTypes.STRING(2048),
+            allowNull: true,
+            field: "image_url",
+        },
         displayOrder: {
             type: DataTypes.INTEGER,
             allowNull: false,

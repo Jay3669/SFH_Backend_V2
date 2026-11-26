@@ -25,7 +25,7 @@ const positiveIntegerQuery = (value, field, fallback, maximum = Number.MAX_SAFE_
 
 export const validateMenuCategoryInput = (body, partial = false) => {
     if (!isObject(body)) return { error: 'A JSON object is required.' };
-    const allowed = new Set(['name', 'description', 'displayOrder', 'isActive']);
+    const allowed = new Set(['name', 'description', 'imageUrl', 'displayOrder', 'isActive']);
     const unsupported = Object.keys(body).find((field) => !allowed.has(field));
     if (unsupported) return { error: `Unsupported menu category field: ${unsupported}.` };
     if (partial && Object.keys(body).length === 0) {
@@ -49,6 +49,13 @@ export const validateMenuCategoryInput = (body, partial = false) => {
         value.description = typeof body.description === 'string'
             ? body.description.trim() || null
             : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'imageUrl')) {
+        if (body.imageUrl !== null && (typeof body.imageUrl !== 'string' || body.imageUrl.length > 2048)) {
+            return { error: 'imageUrl must be at most 2048 characters.' };
+        }
+        const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : '';
+        value.imageUrl = imageUrl || null;
     }
     if (Object.prototype.hasOwnProperty.call(body, 'displayOrder')) {
         if (!Number.isInteger(body.displayOrder) ||
