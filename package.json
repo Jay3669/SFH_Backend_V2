@@ -25,6 +25,7 @@
     "migrate:023": "node seeders/applyOneMigration.js migrations/023_stock_category_ordering.sql",
     "migrate:024": "node seeders/applyOneMigration.js migrations/024_menu_codes_and_item_display_order.sql",
     "migrate:025": "node seeders/applyOneMigration.js migrations/025_menu_category_image_url.sql",
+    "migrate:026": "node seeders/applyOneMigration.js migrations/026_menu_item_price_repair.sql",
     "test": "node --test"
   },
   "keywords": [],

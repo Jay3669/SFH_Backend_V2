@@ -188,6 +188,8 @@ runner applies it automatically once earlier migrations are present in
 available for explicit, tracked application of migrations 006, 007, and 024.
 Migration 025 adds nullable menu-category `imageUrl` support; production startup
 applies it automatically after the previously recorded migrations.
+Migration 026 repairs a missing `menu_items.price` column and its nonnegative
+constraint; production startup applies it automatically as a forward fix.
 For local development, use `npm run dev`, which watches `src` and `migrations`
 and restarts the server when files change. Production
 permissions are seeded at startup: Admins and Managers can maintain production,
