@@ -9,6 +9,8 @@
     "seed:admin": "node src/scripts/createAdmin.js",
     "seed:test-data": "node src/scripts/seedTestData.js",
     "seed:realistic": "node seeders/masterSeeder.js",
+    "migrate:006": "node seeders/applyOneMigration.js migrations/006_recipe_production.sql",
+    "migrate:007": "node seeders/applyOneMigration.js migrations/007_menu_categories.sql",
     "migrate:014": "node seeders/applyOneMigration.js migrations/014_production_sales_model_alignment.sql",
     "migrate:015": "node seeders/applyOneMigration.js migrations/015_cash_drawers.sql",
     "migrate:016": "node seeders/applyOneMigration.js migrations/016_staff_mobile_enhancements.sql",
