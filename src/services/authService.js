@@ -618,8 +618,10 @@ export const ensureAuthenticationSeedData = async () => {
         customer: ['profile:read', 'profile:update'],
     };
     await Role.bulkCreate(roles.map(([id, name]) => ({ id, name })), { ignoreDuplicates: true });
-    await Promise.all(Object.entries(permissionDescriptions).map(([id, description]) =>
-        Permission.findOrCreate({ where: { id }, defaults: { description } })));
+    await Permission.bulkCreate(
+        Object.entries(permissionDescriptions).map(([id, description]) => ({ id, description })),
+        { ignoreDuplicates: true },
+    );
     await RolePermission.bulkCreate(
         Object.entries(assignments).flatMap(([roleId, permissions]) =>
             permissions.map((permissionId) => ({ roleId, permissionId }))),

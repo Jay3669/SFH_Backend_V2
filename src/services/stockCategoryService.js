@@ -1,5 +1,5 @@
 import { ForeignKeyConstraintError, Op, UniqueConstraintError } from 'sequelize';
-import database from '../config/database.js';
+import database, { schema } from '../config/database.js';
 import { StockCategory, StockItem } from '../models/stock.model.js';
 import {
     MAX_STOCK_CATEGORY_DISPLAY_ORDER,
@@ -34,7 +34,7 @@ const assertUniqueCategoryName = async (name, exceptId, transaction) => {
 };
 
 const lockCategoryOrdering = (transaction) => database.sequelize.query(
-    'LOCK TABLE "public"."stock_categories" IN SHARE ROW EXCLUSIVE MODE',
+    `LOCK TABLE "${schema}"."stock_categories" IN SHARE ROW EXCLUSIVE MODE`,
     { transaction },
 );
 
@@ -70,9 +70,9 @@ const mapUniqueCategoryError = (error) => {
 const compactDisplayOrders = async (transaction) => database.sequelize.query(`
     WITH ordered_categories AS (
         SELECT "id", ROW_NUMBER() OVER (ORDER BY "display_order" ASC, "name" ASC, "id" ASC)::integer AS next_order
-        FROM "public"."stock_categories"
+        FROM "${schema}"."stock_categories"
     )
-    UPDATE "public"."stock_categories" AS category
+    UPDATE "${schema}"."stock_categories" AS category
     SET "display_order" = ordered_categories.next_order
     FROM ordered_categories
     WHERE category."id" = ordered_categories."id"
@@ -88,7 +88,7 @@ export const listStockCategories = async () => {
     const categories = await StockCategory.findAll({
         order: [['displayOrder', 'ASC'], ['name', 'ASC']],
     });
-    return Promise.all(categories.map(categoryWithItemCount));
+    return Promise.all(categories.map((category) => categoryWithItemCount(category)));
 };
 
 export const getStockCategory = async (id) => {

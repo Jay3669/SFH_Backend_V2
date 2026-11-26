@@ -1,28 +1,33 @@
 import dotenv from 'dotenv';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { logger } from '../utils/logger.js';
+import { resolveDatabaseSettings } from './databaseSettings.js';
 
 dotenv.config();
 
-const databaseUrl = process.env.DATABASE_URL;
-const database = process.env.DB_NAME;
-export const schema = process.env.DB_SCHEMA || 'public';
-const username = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
-const host = process.env.DB_HOST;
-const port = process.env.DB_PORT === undefined ? 5432 : Number(process.env.DB_PORT);
-const sslEnabled = process.env.DB_SSL === 'true';
+const settings = resolveDatabaseSettings();
+const {
+    databaseUrl,
+    database,
+    schema,
+    username,
+    password,
+    host,
+    port,
+    sslEnabled,
+} = settings;
+export { schema };
 
 if (!databaseUrl && (!database || !username || !password || !host)) {
-    throw new Error('Set DATABASE_URL or configure DB_HOST, DB_NAME, DB_USER, and DB_PASSWORD.');
+    throw new Error(`Configure the database URL or host, name, user, and password for the "${settings.profile}" database profile.`);
 }
 
 if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(schema)) {
-    throw new Error('DB_SCHEMA must be a valid PostgreSQL schema identifier.');
+    throw new Error(`The schema for the "${settings.profile}" database profile must be a valid PostgreSQL identifier.`);
 }
 
 if (!databaseUrl && (!Number.isInteger(port) || port < 1 || port > 65535)) {
-    throw new Error('DB_PORT must be a valid TCP port.');
+    throw new Error(`The port for the "${settings.profile}" database profile must be a valid TCP port.`);
 }
 
 const sequelizeOptions = {

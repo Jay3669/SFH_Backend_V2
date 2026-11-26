@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { UniqueConstraintError } from 'sequelize';
 import database from '../config/database.js';
+import { shouldSyncDatabase } from '../config/databaseSettings.js';
 import User, { USER_ROLES } from '../models/user.model.js';
 import { createLogger } from '../utils/logger.js';
 import { isValidPasswordLength } from '../validators/registrationValidator.js';
@@ -32,7 +33,9 @@ const seedAdmin = async () => {
     }
 
     await database.connect();
-    await database.sync();
+    if (shouldSyncDatabase()) {
+        await database.sync();
+    }
     const email = ADMIN_EMAIL.trim().toLowerCase();
     const existing = await User.findOne({ where: { email } });
     if (existing) {

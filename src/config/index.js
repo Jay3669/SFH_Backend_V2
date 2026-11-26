@@ -1,10 +1,13 @@
 import dotenv from 'dotenv';
+import { resolveDatabaseSettings } from './databaseSettings.js';
 
 dotenv.config();
 
+const databaseSettings = resolveDatabaseSettings();
+
 const config = {
     database: {
-        schema: process.env.DB_SCHEMA || 'public',
+        schema: databaseSettings.schema,
     },
     app: {
         port: Number(process.env.PORT) || 5000,

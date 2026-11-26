@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
-import database from '../config/database.js';
+import database, { schema } from '../config/database.js';
 import User from '../models/user.model.js';
 import { StockCategory, StockItem, StockMovement } from '../models/stock.model.js';
 import { findNextStockCategoryDisplayOrder } from '../utils/stockCategoryDisplayOrder.js';
@@ -107,7 +107,7 @@ const createFixture = async (transaction) => {
     const actorUserId = users[0].id;
 
     await database.sequelize.query(
-        'LOCK TABLE "public"."stock_categories" IN SHARE ROW EXCLUSIVE MODE',
+        `LOCK TABLE "${schema}"."stock_categories" IN SHARE ROW EXCLUSIVE MODE`,
         { transaction },
     );
     const existingCategoryOrders = await StockCategory.findAll({

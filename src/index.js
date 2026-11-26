@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { QueryTypes } from 'sequelize';
 import { createLogger } from './utils/logger.js';
+import { shouldSyncDatabase } from './config/databaseSettings.js';
 
 dotenv.config();
 
@@ -85,9 +86,16 @@ const startServer = async () => {
     const { initializeAssociations } = await import('./models/index.js');
     initializeAssociations();
     await database.connect();
+    logger.info('Checking stock code sequences.');
     await ensureStockCodeSequences(database, schema);
-    await database.sync();
+    if (shouldSyncDatabase()) {
+        logger.info('Synchronizing local database models.');
+        await database.sync();
+    } else {
+        logger.info('Skipping Sequelize sync; apply database migrations before production startup.');
+    }
     const { ensureAuthenticationSeedData } = await import('./services/authService.js');
+    logger.info('Ensuring authentication roles and permissions.');
     await ensureAuthenticationSeedData();
 
     const port = Number(process.env.PORT) || 5000;

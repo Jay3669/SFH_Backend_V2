@@ -1,4 +1,4 @@
-import database from '../src/config/database.js';
+import database, { schema } from '../src/config/database.js';
 import { QueryTypes } from 'sequelize';
 
 export async function validateSeedData(transaction) {
@@ -13,7 +13,7 @@ export async function validateSeedData(transaction) {
     const counts=[];
     for (const table of tables) {
         const [row]=await database.sequelize.query(
-            `SELECT COUNT(*)::integer AS count FROM "public"."${table}"`,
+            `SELECT COUNT(*)::integer AS count FROM "${schema}"."${table}"`,
             { type:QueryTypes.SELECT, transaction },
         );
         counts.push({table,finalCount:row.count});
@@ -30,8 +30,8 @@ export async function validateSeedData(transaction) {
     for (const [label,parent,child,foreign] of orphanSql) {
         const [row]=await database.sequelize.query(
             `SELECT COUNT(*)::integer AS count
-             FROM "public"."${child}" c
-             LEFT JOIN "public"."${parent}" p ON p."id" = c."${foreign}"
+             FROM "${schema}"."${child}" c
+             LEFT JOIN "${schema}"."${parent}" p ON p."id" = c."${foreign}"
              WHERE p."id" IS NULL`,
             { type:QueryTypes.SELECT, transaction },
         );
@@ -39,12 +39,12 @@ export async function validateSeedData(transaction) {
     }
 
     const [negativeStock]=await database.sequelize.query(
-        `SELECT COUNT(*)::integer AS count FROM "public"."stock_items" WHERE "quantity" < 0`,
+        `SELECT COUNT(*)::integer AS count FROM "${schema}"."stock_items" WHERE "quantity" < 0`,
         { type:QueryTypes.SELECT, transaction },
     );
     const [mismatchedSales]=await database.sequelize.query(
         `SELECT COUNT(*)::integer AS count
-         FROM "public"."production_sales"
+         FROM "${schema}"."production_sales"
          WHERE ABS("totalAmount" - ("subtotal" - "discountAmount" + "taxAmount" + "packingCharge")) > 0.01`,
         { type:QueryTypes.SELECT, transaction },
     );
@@ -59,7 +59,7 @@ export async function validateSeedData(transaction) {
     for (const [label,table,column] of duplicateQueries) {
         const [row]=await database.sequelize.query(
             `SELECT COUNT(*)::integer AS count FROM (
-                SELECT "${column}" FROM "public"."${table}"
+                SELECT "${column}" FROM "${schema}"."${table}"
                 WHERE "${column}" IS NOT NULL
                 GROUP BY "${column}" HAVING COUNT(*) > 1
              ) duplicate_values`,

@@ -7,7 +7,7 @@ import { Notification, NotificationRecipient } from '../models/notification.mode
 import { Permission, Role, RolePermission, UserPermission } from '../models/auth.model.js';
 import { StaffRoleAssignment } from '../models/profitSharing.model.js';
 import { BAD_REQUEST, CREATED, NOT_FOUND, OPERATION_SUCCESS } from '../function/response.js';
-import database from '../config/database.js';
+import database, { schema } from '../config/database.js';
 import { QueryTypes } from 'sequelize';
 import { validatePrivilegedRegistration } from '../validators/registrationValidator.js';
 
@@ -28,18 +28,18 @@ export const getStaffDashboardSummary = async (req, res, next) => {
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'completed' AND "paymentMethod" = 'cash' THEN "totalAmount" ELSE 0 END), 0)::numeric AS "cashCollection",
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'completed' AND "paymentMethod" = 'upi' THEN "totalAmount" ELSE 0 END), 0)::numeric AS "upiCollection",
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'completed' AND "paymentMethod" = 'card' THEN "totalAmount" ELSE 0 END), 0)::numeric AS "cardCollection"
-            FROM "public"."production_sales"
+            FROM "${schema}"."production_sales"
             WHERE "productionDate" = $1
         `, { bind: [today], type: QueryTypes.SELECT });
         const [customerCount, expenseRow, stockRow] = await Promise.all([
             Customer.count({ where: { status: 'active' } }),
             database.sequelize.query(`
                 SELECT COALESCE(SUM("amount"), 0)::numeric AS "todayExpenses"
-                FROM "public"."operating_expenses" WHERE "expenseDate" = $1
+                FROM "${schema}"."operating_expenses" WHERE "expenseDate" = $1
             `, { bind: [today], type: QueryTypes.SELECT }),
             database.sequelize.query(`
                 SELECT COUNT(*)::integer AS "lowStock"
-                FROM "public"."stock_items"
+                FROM "${schema}"."stock_items"
                 WHERE "isActive" = true AND "quantity" <= "reorderLevel"
             `, { type: QueryTypes.SELECT }),
         ]);
@@ -70,8 +70,8 @@ export const getCustomerPurchaseHistory = async (req, res, next) => {
                        'unitPrice', i."unitPrice",
                        'totalPrice', i."totalPrice"
                    )) FILTER (WHERE i."id" IS NOT NULL), '[]') AS "items"
-            FROM "public"."production_sales" s
-            LEFT JOIN "public"."production_sale_items" i ON i."saleId" = s."id"
+            FROM "${schema}"."production_sales" s
+            LEFT JOIN "${schema}"."production_sale_items" i ON i."saleId" = s."id"
             WHERE s."customerId" = $1
             GROUP BY s."id"
             ORDER BY s."createdAt" DESC

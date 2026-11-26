@@ -1,4 +1,5 @@
 import database from '../src/config/database.js';
+import { resolveDatabaseSettings } from '../src/config/databaseSettings.js';
 import { initializeAssociations } from '../src/models/index.js';
 import { assertSafeTestDatabase } from './safety.js';
 import { seedAuthUsers } from './01_authUsers.js';
@@ -9,6 +10,7 @@ import { seedSupporting } from './05_supporting.js';
 import { validateSeedData } from './06_validate.js';
 
 async function main() {
+    const databaseSettings = resolveDatabaseSettings();
     assertSafeTestDatabase();
     initializeAssociations();
     await database.connect();
@@ -25,8 +27,8 @@ async function main() {
 
     console.log(JSON.stringify({
         message: 'Realistic non-production seed completed.',
-        database: process.env.DB_NAME,
-        schema: process.env.DB_SCHEMA || 'public',
+        database: databaseSettings.database,
+        schema: databaseSettings.schema,
         inserted: report,
     }, null, 2));
 }

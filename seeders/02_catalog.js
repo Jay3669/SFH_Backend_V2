@@ -2,7 +2,7 @@ import MenuCategory from '../src/models/menuCategory.model.js';
 import MenuItem from '../src/models/menuItem.model.js';
 import StockCategory from '../src/models/stockCategory.model.js';
 import StockItem from '../src/models/stockItem.model.js';
-import database from '../src/config/database.js';
+import database, { schema } from '../src/config/database.js';
 import { findNextStockCategoryDisplayOrder } from '../src/utils/stockCategoryDisplayOrder.js';
 
 const menuNames = [
@@ -50,7 +50,7 @@ export async function seedCatalog(transaction) {
     ];
     const stockCategories = {};
     await database.sequelize.query(
-        'LOCK TABLE "public"."stock_categories" IN SHARE ROW EXCLUSIVE MODE',
+        `LOCK TABLE "${schema}"."stock_categories" IN SHARE ROW EXCLUSIVE MODE`,
         { transaction },
     );
     const currentCategoryOrders = await StockCategory.findAll({

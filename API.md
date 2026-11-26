@@ -7,10 +7,22 @@ Responses have the form `{ statusCode, status, message, data? }`.
 ## Initial admin and database setup
 
 Configure PostgreSQL with `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`,
-`DB_USER`, and `DB_PASSWORD`. `DB_SCHEMA` defaults to `public`; migrations run
-through `seeders/applyOneMigration.js` are applied to that schema. Set `DB_SSL=true`
-when the database requires TLS. On Render, set `DATABASE_URL` to the PostgreSQL
-internal connection URL, set `DB_SCHEMA=sfh` if using the `sfh` schema, and configure
+`DB_USER`, and `DB_PASSWORD`. To keep local and production settings in one `.env`,
+set `DB_ENV=local` or `DB_ENV=production` and provide profile-specific values:
+`LOCAL_DB_HOST`, `LOCAL_DB_PORT`, `LOCAL_DB_NAME`, `LOCAL_DB_SCHEMA`,
+`LOCAL_DB_USER`, `LOCAL_DB_PASSWORD`, and `LOCAL_DB_SSL`, or the equivalent
+`PRODUCTION_DB_*` variables. The selected profile can instead use
+`LOCAL_DATABASE_URL` or `PRODUCTION_DATABASE_URL`. `DB_ENV` defaults to the
+legacy `DB_*`/`DATABASE_URL` settings; `DB_ENV=production` also accepts those
+legacy names when no production-prefixed settings are supplied.
+`DB_SCHEMA` defaults to `public`; migrations run through
+`seeders/applyOneMigration.js` are applied to the selected profile's schema. Set
+the selected profile's `*_DB_SSL=true` when the database requires TLS. On Render,
+set `PRODUCTION_DATABASE_URL` to the PostgreSQL internal connection URL, set
+`PRODUCTION_DB_SCHEMA=sfh` if using the `sfh` schema, and apply all required
+migrations to the selected schema before starting. Automatic Sequelize sync is
+reserved for local development; production startup expects its schema to be
+managed by migrations.
 `JWT_ACCESS_SECRET` (at least 32 characters;
 `JWT_SECRET` is also accepted). Set `JWT_ACCESS_EXPIRES_IN=8h` for an 8-hour
 access token; this setting controls JWT signing and the login/refresh response
