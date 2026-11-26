@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, literal } from "sequelize";
 import { schema, sequelize } from "../config/db.js";
 
 const MenuCategory = sequelize.define(
@@ -12,6 +12,12 @@ const MenuCategory = sequelize.define(
         name: {
             type: DataTypes.STRING(80),
             allowNull: false
+        },
+        categoryCode: {
+            type: DataTypes.STRING(32),
+            allowNull: false,
+            defaultValue: literal(`'MCAT-' || CASE WHEN nextval('${schema}.menu_category_code_seq'::regclass) < 1000000 THEN lpad(currval('${schema}.menu_category_code_seq'::regclass)::text, 6, '0') ELSE currval('${schema}.menu_category_code_seq'::regclass)::text END`),
+            field: "category_code",
         },
         description: {
             type: DataTypes.STRING(255),

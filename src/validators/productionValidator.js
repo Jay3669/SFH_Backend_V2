@@ -1,6 +1,7 @@
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const MAX_MENU_ITEM_PRICE = 9_999_999_999.99;
+const MAX_MENU_ITEM_DISPLAY_ORDER = 2_147_483_647;
 const isDateOnly = (value) => {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
     const date = new Date(`${value}T00:00:00.000Z`);
@@ -34,7 +35,7 @@ const rejectUnknownFields = (body, allowed, label) => {
 
 export const validateMenuItemInput = (body, partial = false) => {
     if (!isObject(body)) return { error: 'A JSON object is required.' };
-    const allowed = new Set(['name', 'category', 'categoryId', 'price', 'isVegetarian', 'description', 'imageUrl', 'isActive']);
+    const allowed = new Set(['name', 'category', 'categoryId', 'price', 'displayOrder', 'isVegetarian', 'description', 'imageUrl', 'isActive']);
     const unknown = rejectUnknownFields(body, allowed, 'menu item');
     if (unknown) return unknown;
     if (partial && Object.keys(body).length === 0) return { error: 'Provide at least one menu item field.' };
@@ -69,6 +70,14 @@ export const validateMenuItemInput = (body, partial = false) => {
         const parsed = decimal(body.price, 2, MAX_MENU_ITEM_PRICE, 'price');
         if (parsed.error) return parsed;
         value.price = parsed.value;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'displayOrder')) {
+        if (!Number.isInteger(body.displayOrder) ||
+            body.displayOrder < 0 ||
+            body.displayOrder > MAX_MENU_ITEM_DISPLAY_ORDER) {
+            return { error: `displayOrder must be an integer from 0 to ${MAX_MENU_ITEM_DISPLAY_ORDER}.` };
+        }
+        value.displayOrder = body.displayOrder;
     }
     for (const field of ['description', 'imageUrl']) {
         if (!Object.prototype.hasOwnProperty.call(body, field)) continue;

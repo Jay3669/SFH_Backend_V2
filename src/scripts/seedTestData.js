@@ -193,6 +193,7 @@ const createFixture = async (transaction) => {
             id: makeId('menu', index),
             name: `${PREFIX} Menu ${String(index).padStart(2, '0')} - ${ingredientNames[offset]} Bowl`,
             category: offset % 2 === 0 ? 'Main Course' : 'Lunch Special',
+            displayOrder: index,
             isVegetarian: offset % 3 !== 0,
             description: `Test menu item using ${ingredientNames[offset].toLowerCase()}.`,
             isActive: true,

@@ -1,5 +1,5 @@
 import { Op, UniqueConstraintError } from 'sequelize';
-import database from '../config/database.js';
+import database, { schema } from '../config/database.js';
 import MenuCategory from '../models/menuCategory.model.js';
 import MenuItem from '../models/menuItem.model.js';
 import {
@@ -29,6 +29,12 @@ const validateId = (id) => {
 };
 
 const notFound = () => new MenuCategoryError(404, 'Menu category not found.', 'NOT_FOUND');
+const MAX_DISPLAY_ORDER = 2_147_483_647;
+
+const lockCategoryOrdering = (transaction) => database.sequelize.query(
+    `LOCK TABLE "${schema}"."menu_categories" IN SHARE ROW EXCLUSIVE MODE`,
+    { transaction },
+);
 
 const throwCategoryNameConflict = (error) => {
     if (error instanceof UniqueConstraintError || error.name === 'SequelizeUniqueConstraintError') {
@@ -101,8 +107,18 @@ export const getMenuCategory = async (id) => {
 export const createMenuCategory = async (body) => {
     const value = validate(validateMenuCategoryInput(body));
     try {
-        const category = await MenuCategory.create(value);
-        return { ...category.toJSON(), menuItemCount: 0 };
+        return await database.sequelize.transaction(async (transaction) => {
+            if (value.displayOrder === undefined) {
+                await lockCategoryOrdering(transaction);
+                const currentMaximum = await MenuCategory.max('displayOrder', { transaction });
+                value.displayOrder = (currentMaximum === null ? 0 : Number(currentMaximum)) + 1;
+                if (value.displayOrder > MAX_DISPLAY_ORDER) {
+                    throw new MenuCategoryError(409, 'No available menu category display order remains.', 'CONFLICT');
+                }
+            }
+            const category = await MenuCategory.create(value, { transaction });
+            return { ...category.toJSON(), menuItemCount: 0 };
+        });
     } catch (error) {
         throwCategoryNameConflict(error);
     }

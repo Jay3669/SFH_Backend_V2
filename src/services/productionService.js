@@ -387,7 +387,7 @@ export const listMenuItems = async (query) => {
         where,
         limit,
         offset,
-        order: [['name', 'ASC']],
+        order: [['displayOrder', 'ASC'], ['name', 'ASC'], ['id', 'ASC']],
         include: [{ model: Recipe, as: 'recipe', required: false }],
     });
     return { items: rows, pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } };

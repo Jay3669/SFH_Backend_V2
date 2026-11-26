@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
     "seed:admin": "node src/scripts/createAdmin.js",
     "seed:test-data": "node src/scripts/seedTestData.js",
     "seed:realistic": "node seeders/masterSeeder.js",
@@ -18,6 +19,7 @@
     "migrate:021": "node seeders/applyOneMigration.js migrations/021_stock_category_code.sql",
     "migrate:022": "node seeders/applyOneMigration.js migrations/022_stock_item_fields.sql",
     "migrate:023": "node seeders/applyOneMigration.js migrations/023_stock_category_ordering.sql",
+    "migrate:024": "node seeders/applyOneMigration.js migrations/024_menu_codes_and_item_display_order.sql",
     "test": "node --test"
   },
   "keywords": [],

@@ -17,15 +17,23 @@ test('menu item validation accepts and bounds a non-negative price', () => {
         name: 'Masala Dosa',
         categoryId: uuid,
         price: 129.5,
+        displayOrder: 3,
     });
     assert.deepEqual(result.value, {
         name: 'Masala Dosa',
         categoryId: uuid,
         price: 129.5,
+        displayOrder: 3,
     });
     assert.equal(validateMenuItemInput({ name: 'Masala Dosa', categoryId: uuid }).value.price, undefined);
     for (const price of [-1, 1.234, Number.NaN, 10_000_000_000, '129.50']) {
         assert.match(validateMenuItemInput({ name: 'Masala Dosa', categoryId: uuid, price }).error, /price/);
+    }
+    for (const displayOrder of [-1, 1.5, 2_147_483_648]) {
+        assert.match(
+            validateMenuItemInput({ name: 'Masala Dosa', categoryId: uuid, displayOrder }).error,
+            /displayOrder/,
+        );
     }
 });
 

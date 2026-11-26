@@ -37,7 +37,7 @@ export async function seedCatalog(transaction) {
         const category = categories[categoryName] || categories['Main Course'];
         const [row,created] = await MenuItem.findOrCreate({
             where: { name },
-            defaults: { name, category: category.name, categoryId: category.id, price: vegetarian ? 180 + (i % 8) * 25 : 260 + (i % 8) * 30, isVegetarian:vegetarian, description:`Freshly prepared ${name} using authentic Indian ingredients.`, isActive:true },
+            defaults: { name, category: category.name, categoryId: category.id, displayOrder: i + 1, price: vegetarian ? 180 + (i % 8) * 25 : 260 + (i % 8) * 30, isVegetarian:vegetarian, description:`Freshly prepared ${name} using authentic Indian ingredients.`, isActive:true },
             transaction,
         });
         if (created) menuCreated += 1;

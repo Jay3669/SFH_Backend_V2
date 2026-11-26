@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, literal } from "sequelize";
 import { schema, sequelize } from "../config/db.js";
 import MenuCategory from "./menuCategory.model.js";
 
@@ -9,6 +9,12 @@ const MenuItem = sequelize.define(
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true,
+        },
+        itemCode: {
+            type: DataTypes.STRING(32),
+            allowNull: false,
+            defaultValue: literal(`'MITM-' || CASE WHEN nextval('${schema}.menu_item_code_seq'::regclass) < 1000000 THEN lpad(currval('${schema}.menu_item_code_seq'::regclass)::text, 6, '0') ELSE currval('${schema}.menu_item_code_seq'::regclass)::text END`),
+            field: "item_code",
         },
         name: {
             type: DataTypes.STRING(120),
@@ -28,6 +34,13 @@ const MenuItem = sequelize.define(
             type: DataTypes.DECIMAL(12, 2),
             allowNull: false,
             defaultValue: 0,
+            validate: { min: 0 },
+        },
+        displayOrder: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+            field: "display_order",
             validate: { min: 0 },
         },
         isVegetarian: {

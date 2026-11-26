@@ -176,7 +176,9 @@ availability, POS sales, closing, and expenses. Apply
 non-constraint indexes on user email and phone while retaining their unique
 constraints. Apply `migrations/011_application_settings_and_split_payments.sql`
 to initialize shared billing settings, sequential invoice numbering, configurable
-charges, and split-payment snapshots. Production
+charges, and split-payment snapshots. After the existing migrations, run
+`npm run migrate:024` to add generated menu category/item codes and menu item
+display ordering. Production
 permissions are seeded at startup: Admins and Managers can maintain production,
 close days, record expenses and read reports; Cashiers can read POS availability
 and complete cashier-confirmed bills; Employees can read recipes, preview and
