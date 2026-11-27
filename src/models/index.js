@@ -1,3 +1,6 @@
+import { DataTypes } from 'sequelize';
+import Branch from './branch.model.js';
+import { StaffProfile } from './staffProfile.model.js';
 import User from './user.model.js';
 import MenuCategory from './menuCategory.model.js';
 import MenuItem from './menuItem.model.js';
@@ -29,8 +32,72 @@ import {
     StaffActivityLog,
     initializeProfitSharingAssociations,
 } from './profitSharing.model.js';
+import { applyBranchScope, getBranchId } from '../utils/branchContext.js';
+
+const branchScopedModels = [
+    MenuCategory,
+    MenuItem,
+    Recipe,
+    RecipeVersion,
+    RecipeIngredient,
+    StockCategory,
+    StockItem,
+    StockMovement,
+    ProductionRecord,
+    ProductionCostDetail,
+    ProductionCancellation,
+    ProductionIngredient,
+    ProductionRecovery,
+    ProductionSale,
+    ProductionSaleItem,
+    ProductionDay,
+    ProductionDayItem,
+    OperatingExpense,
+    StaffProfile,
+    StaffRoleAssignment,
+    ProfitShareCalculation,
+    ProfitShareCalculationDetail,
+    ProfitShareApproval,
+    ProfitShareAdjustment,
+    ProfitSharePayment,
+    ProfitSharePaymentDetail,
+    StaffActivityLog,
+];
+
+function initializeBranchScope() {
+    for (const model of branchScopedModels) {
+        if (!model.rawAttributes.branchId) {
+            model.rawAttributes.branchId = {
+                type: DataTypes.UUID,
+                allowNull: false,
+                primaryKey: model === ProductionDay,
+                field: 'branch_id',
+                references: { model: Branch.getTableName(), key: 'id' },
+                onDelete: 'RESTRICT',
+            };
+            model.refreshAttributes();
+        }
+
+        model.addHook('beforeFind', (options) => applyBranchScope(options, model));
+        model.addHook('beforeCount', (options) => applyBranchScope(options, model));
+        model.addHook('beforeBulkUpdate', (options) => {
+            applyBranchScope(options, model);
+            if (options.attributes) delete options.attributes.branchId;
+        });
+        model.addHook('beforeBulkDestroy', (options) => applyBranchScope(options, model));
+        model.addHook('beforeValidate', (instance) => {
+            const branchId = getBranchId();
+            if (branchId) instance.branchId = branchId;
+        });
+        model.addHook('beforeBulkCreate', (instances) => {
+            const branchId = getBranchId();
+            if (branchId) instances.forEach((instance) => { instance.branchId = branchId; });
+        });
+    }
+}
 
 export function initializeAssociations() {
+    initializeBranchScope();
     MenuCategory.hasMany(MenuItem, { foreignKey: 'categoryId', as: 'menuItems' });
     MenuItem.belongsTo(MenuCategory, { foreignKey: 'categoryId', as: 'menuCategory' });
     MenuItem.hasOne(Recipe, { foreignKey: 'menuItemId', as: 'recipe' });
@@ -61,6 +128,7 @@ export function initializeAssociations() {
         foreignKey: 'productionDate',
         sourceKey: 'productionDate',
         as: 'items',
+        constraints: false,
     });
     ProductionSale.hasMany(ProductionSaleItem, { foreignKey: 'saleId', as: 'items' });
     ProductionSaleItem.belongsTo(ProductionSale, { foreignKey: 'saleId', as: 'sale' });
@@ -68,6 +136,8 @@ export function initializeAssociations() {
 }
 
 export {
+    Branch,
+    StaffProfile,
     User,
     MenuCategory,
     MenuItem,

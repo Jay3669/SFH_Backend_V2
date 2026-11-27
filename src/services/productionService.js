@@ -98,7 +98,8 @@ const lockProductionDay = async (productionDate, transaction) => {
         defaults: { productionDate },
         transaction,
     });
-    const day = await ProductionDay.findByPk(productionDate, {
+    const day = await ProductionDay.findOne({
+        where: { productionDate },
         transaction,
         lock: transaction.LOCK.UPDATE,
     });
@@ -109,6 +110,7 @@ const lockProductionDay = async (productionDate, transaction) => {
 const recipeInclude = {
     model: RecipeIngredient,
     as: 'ingredients',
+    separate: true,
     include: [{ model: StockItem, as: 'stockItem' }],
 };
 
@@ -477,7 +479,9 @@ export const listRecipes = async (query) => {
 
 export const getRecipe = async (id) => {
     const { recipe, version } = await getRecipeBundle(id);
-    const fullVersion = await RecipeVersion.findByPk(version.id, { include: [recipeInclude] });
+    const fullVersion = await RecipeVersion.findByPk(version.id, {
+        include: [recipeInclude],
+    });
     return { ...recipe.toJSON(), current: fullVersion };
 };
 
@@ -684,7 +688,7 @@ const platesForRecord = (record) => Number(record.actualPlateCount ?? record.exp
 
 export const getProductionAvailability = async (query) => {
     const productionDate = getProductionDate(query);
-    const day = await ProductionDay.findByPk(productionDate);
+    const day = await ProductionDay.findOne({ where: { productionDate } });
     const records = await ProductionRecord.findAll({
         where: { productionDate, status: 'confirmed' },
         include: [{
@@ -1303,27 +1307,16 @@ export const cancelProduction = async (id, body, actorUserId) => {
             transaction,
             order: [['stockItemId', 'ASC']],
         });
-        const requestedRecoveries = new Map(value.recoveries.map((entry) => [
-            entry.productionIngredientId,
-            entry.quantityRecovered,
-        ]));
-        const ingredientById = new Map(ingredientRows.map((ingredient) => [ingredient.id, ingredient]));
-        for (const recovery of value.recoveries) {
-            const ingredient = ingredientById.get(recovery.productionIngredientId);
-            if (!ingredient) throw new ProductionError(400, 'A recovery references an ingredient outside this production.', 'VALIDATION_ERROR');
-            if (toScaledInteger(recovery.quantityRecovered, 3, 'quantityRecovered') >
-                toScaledInteger(ingredient.quantityDeducted, 3, 'quantityDeducted')) {
-                throw new ProductionError(400, 'Recovered quantity cannot exceed the quantity consumed.', 'VALIDATION_ERROR');
-            }
-        }
-        const stockIds = [...new Set(value.recoveries.map((entry) =>
-            ingredientById.get(entry.productionIngredientId).stockItemId))].sort();
+        const stockIds = [...new Set(ingredientRows.map((ingredient) => ingredient.stockItemId))].sort();
         const stockItems = await StockItem.findAll({
             where: { id: stockIds },
             transaction,
             lock: transaction.LOCK.UPDATE,
             order: [['id', 'ASC']],
         });
+        if (stockItems.length !== stockIds.length) {
+            throw new ProductionError(409, 'A production stock item no longer exists.', 'STOCK_ITEM_UNAVAILABLE');
+        }
         const stockById = new Map(stockItems.map((item) => [item.id, item]));
         const cancellation = await ProductionCancellation.create({
             productionRecordId: record.id,
@@ -1331,10 +1324,9 @@ export const cancelProduction = async (id, body, actorUserId) => {
             notes: value.notes,
             cancelledBy: actorUserId,
         }, { transaction });
-        for (const [ingredientId, quantityRecovered] of requestedRecoveries) {
-            const ingredient = ingredientById.get(ingredientId);
+        for (const ingredient of ingredientRows) {
+            const quantityRecovered = ingredient.quantityDeducted;
             const stockItem = stockById.get(ingredient.stockItemId);
-            if (!stockItem) throw new ProductionError(409, 'A recovered stock item no longer exists.', 'STOCK_ITEM_UNAVAILABLE');
             const beforeMilli = toScaledInteger(stockItem.quantity, 3, 'Stock balance');
             const recoveredMilli = toScaledInteger(quantityRecovered, 3, 'quantityRecovered');
             const afterMilli = beforeMilli + recoveredMilli;

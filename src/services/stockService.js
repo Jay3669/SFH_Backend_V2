@@ -290,6 +290,7 @@ export const createStockMovement = async ({ itemId, body, actorUserId }) => {
             type: value.type,
             quantity: value.quantity,
             unitCost: value.type === 'in' ? value.unitCost : null,
+            totalCost: value.type === 'in' ? value.totalCost : null,
             change: (afterUnits - beforeUnits) / 1000,
             beforeQuantity,
             afterQuantity,

@@ -7,7 +7,8 @@ export const ProductionDay = sequelize.define(
     {
         productionDate: {
             type: DataTypes.DATEONLY,
-            primaryKey: true
+            allowNull: false,
+            primaryKey: true,
         },
         isClosed: {
             type: DataTypes.BOOLEAN,
@@ -59,7 +60,7 @@ export const ProductionDay = sequelize.define(
         schema,
         timestamps: true,
         freezeTableName: true,
-        tableName: "production_days"
+        tableName: "production_days",
     },
 );
 

@@ -24,8 +24,8 @@ startup applies pending numbered SQL migrations in order and records them in
 `schema_migrations`; automatic Sequelize sync remains reserved for local
 development. For an existing database whose migrations were applied before
 tracking was introduced, verify that it reflects every migration through
-version 023, then initialize its history once with
-`npm run migrate:baseline -- 023`. During this baseline, missing menu/cash-drawer
+version 026, then initialize its history once with
+`npm run migrate:baseline -- 026`. During this baseline, missing menu/cash-drawer
 tables are repaired by migrations 006, 007, and 015; other missing schema
 changes are not applied. Do not baseline a new or partially migrated database.
 `JWT_ACCESS_SECRET` (at least 32 characters;
@@ -117,9 +117,37 @@ Phone OTP sign-in is not enabled, so there is no phone-verification endpoint.
 Account status must be `active` to authenticate; inactive and blocked accounts
 are rejected.
 
+## Branch management
+
+Branch routes require an authenticated user. Admins can create, edit, list, and
+delete branches; staff can read only their assigned branch. Send
+`X-Branch-Id: <uuid>` with stock, menu, recipe, production, and staff requests
+to select a branch. If omitted, Admin requests use the Main Branch; non-admin
+users are always restricted to their assigned branch. Existing data is assigned
+to Main Branch by migration 027. Branches are hard-deleted only when they have
+no dependent records, and at least one branch must remain.
+Production startup applies migration 027 automatically. For a local database
+with migration history already baselined through 026, run
+`npm run migrate:027`; for older existing databases, baseline only after
+verifying their schema through migration 026. A new sync-managed local database
+can create its first branch from the Branch management screen.
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/admin/branches` | Authenticated Admin or staff | List available branches |
+| POST | `/api/admin/branches` | Admin | Create a branch |
+| PATCH | `/api/admin/branches/:branchId` | Admin | Update branch details |
+| DELETE | `/api/admin/branches/:branchId` | Admin | Delete an empty branch |
+
+Create and update accept `name`, `code`, `address`, `phone`, and `email`.
+`name` and `code` are required on create; codes are case-insensitive and allow
+letters, digits, underscores, and hyphens. Deletion returns HTTP 409 with
+`BRANCH_HAS_DEPENDENCIES` when branch-owned stock, menu, recipe, production, or
+staff records remain.
+
 ## Stock management
 
-Stock routes require an Admin bearer access token. Apply
+Stock routes require an Admin bearer access token and branch context. Apply
 `migrations/004_stock_management.sql` and then
 `migrations/005_stock_categories_and_cost_history.sql` before deploying. Existing databases
 that were created without the stock-item `sku` column should also apply
@@ -159,18 +187,22 @@ regard to case, and categories with assigned items cannot be deleted. Item
 creation sets its weighted-average unit cost to zero; cost is computed from
 receipts, not edited directly.
 
-Movement requests use
-`{ "type": "in", "quantity": 1, "unitCost": 64.5, "reason": "Supplier delivery" }`
-for receipts. `unitCost` is the purchase price per unit and is required for
-`in` movements. Issue and count requests use `type`, `quantity`, and `reason`;
-for `count`, `quantity` is the new counted balance. Stock cannot be issued
-below zero, and every movement records the before/after balance and acting
-user. The current stock value uses on-hand quantity multiplied by weighted
-average cost. Daily usage counts distinct items issued today and reports each
-item's total issued quantity; the business day uses `STOCK_TIME_ZONE`, defaulting
-to `Asia/Kolkata`.
+Receipt requests use
+`{ "type": "in", "quantity": 10, "totalCost": 600, "reason": "Supplier delivery" }`.
+`totalCost` is the purchase cost for the entire received quantity; this example
+records a weighted-average unit cost of 60. Existing API clients may continue
+to send `unitCost` instead, which is interpreted as the price per stock unit.
+Provide exactly one of `totalCost` or `unitCost` for an `in` movement. Issue and
+count requests use `type`, `quantity`, and `reason`; for `count`, `quantity` is
+the new counted balance. Stock cannot be issued below zero, and every movement
+records the before/after balance and acting user. The current stock value uses
+on-hand quantity multiplied by weighted average cost. Daily usage counts
+distinct items issued today and reports each item's total issued quantity; the
+business day uses `STOCK_TIME_ZONE`, defaulting to `Asia/Kolkata`.
 
 ## Recipes and daily production
+
+Menu, recipe, production, and staff records are scoped to the selected branch.
 
 Apply `migrations/006_recipe_production.sql` after the stock migrations, then
 `migrations/007_menu_categories.sql` to create menu categories and associate
@@ -321,21 +353,19 @@ spreadsheet use; the admin UI can print or save a PDF from the browser. The
 admin UI provides daily, weekly, monthly, quarterly, half-yearly and yearly
 shortcuts.
 
-To cancel, send a required `reason` and only list the ingredient quantities that
-are genuinely unused and safe to return:
+To cancel, send a required `reason`. Cancellation atomically returns every
+ingredient quantity recorded as deducted for the batch, including recipe and
+ingredient wastage:
 
 ```json
 {
-  "reason": "Batch cancelled before service",
-  "recoveries": [
-    { "productionIngredientId": "uuid-from-production-detail", "quantityRecovered": 0.25 }
-  ]
+  "reason": "Batch cancelled before service"
 }
 ```
 
-Recovered quantities cannot exceed the amount originally issued and are written
-as separate stock-in movements at the original consumed cost. Ingredients not
-listed remain consumed/wasted. Production-only reports support `format=csv`.
+Returned quantities are written as separate stock-in movements at the original
+consumed cost. The stock update, recovery records, and cancellation status are
+committed together. Production-only reports support `format=csv`.
 
 ## Admin user management
 

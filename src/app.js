@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { INTERNAL_SERVER_ERROR, NOT_FOUND } from './function/response.js';
 import { createLogger } from './utils/logger.js';
+import { shouldSyncDatabase } from './config/databaseSettings.js';
 import authRoutes from './routes/authRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import menuCategoryRoutes from './routes/menuCategoryRoutes.js';
@@ -9,6 +10,7 @@ import productionRoutes from './routes/productionRoutes.js';
 import applicationSettingsRoutes from './routes/applicationSettingsRoutes.js';
 import managementRoutes from './routes/managementRoutes.js';
 import profitSharingRoutes from './routes/profitSharingRoutes.js';
+import branchRoutes from './routes/branchRoutes.js';
 
 const logger = createLogger('Application');
 const app = express();
@@ -26,7 +28,7 @@ if (process.env.ENABLE_CORS === 'true') {
 }
 app.use(express.json({ limit: '16kb' }));
 
-app.use('/api', authRoutes, stockRoutes, menuCategoryRoutes, productionRoutes, applicationSettingsRoutes, managementRoutes, profitSharingRoutes);
+app.use('/api', branchRoutes, authRoutes, stockRoutes, menuCategoryRoutes, productionRoutes, applicationSettingsRoutes, managementRoutes, profitSharingRoutes);
 app.use((req, res) => res.status(404).json(NOT_FOUND('Route not found.')));
 app.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
@@ -37,7 +39,7 @@ app.use((error, req, res, next) => {
         return res.status(409).json({
             statusCode: 409,
             status: 'CONFLICT',
-            message: 'An account with this email or phone number already exists.',
+            message: 'A record with these values already exists.',
         });
     }
     if (error.name === 'SequelizeValidationError') {
@@ -48,7 +50,17 @@ app.use((error, req, res, next) => {
         });
     }
     const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
-    logger.error('Request failed', { error: error.message, path: req.path, statusCode });
+    const sql = error.sql || error.original?.sql || error.parent?.sql;
+    const localSql = shouldSyncDatabase()
+        && typeof sql === 'string'
+        ? { sql, errorType: error.name }
+        : {};
+    logger.error('Request failed', {
+        error: error.message,
+        path: req.path,
+        statusCode,
+        ...localSql,
+    });
     if (statusCode < 500 || statusCode === 503) {
         return res.status(statusCode).json({
             statusCode,

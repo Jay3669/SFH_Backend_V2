@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import { schema, sequelize } from "../config/db.js";
-import ProductionDay from "./productionDay.model.js";
 import MenuItem from "./menuItem.model.js";
 
 const ProductionDayItem = sequelize.define(
@@ -14,11 +13,6 @@ const ProductionDayItem = sequelize.define(
         productionDate: {
             type: DataTypes.DATEONLY,
             allowNull: false,
-            references: {
-                model: ProductionDay,
-                key: "productionDate"
-            },
-            onDelete: "RESTRICT",
         },
         menuItemId: {
             type: DataTypes.UUID,

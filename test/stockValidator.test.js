@@ -56,7 +56,16 @@ test('accepts positive receipts and zero-count adjustments with a reason', () =>
             unitCost: 64.5,
             reason: 'Supplier delivery',
         }).value,
-        { type: 'in', quantity: 1.25, unitCost: 64.5, reason: 'Supplier delivery' },
+        { type: 'in', quantity: 1.25, unitCost: 64.5, totalCost: 80.63, reason: 'Supplier delivery' },
+    );
+    assert.deepEqual(
+        validateStockMovementInput({
+            type: 'in',
+            quantity: 10,
+            totalCost: 600,
+            reason: 'Supplier delivery',
+        }).value,
+        { type: 'in', quantity: 10, unitCost: 60, totalCost: 600, reason: 'Supplier delivery' },
     );
     assert.equal(
         validateStockMovementInput({ type: 'count', quantity: 0, reason: 'Physical count' }).error,
@@ -74,8 +83,18 @@ test('rejects zero issues and movement records without a reason', () => {
         /Provide a reason/,
     );
     assert.match(
+        validateStockMovementInput({
+            type: 'in',
+            quantity: 2,
+            unitCost: 10,
+            totalCost: 20,
+            reason: 'Supplier delivery',
+        }).error,
+        /exactly one/,
+    );
+    assert.match(
         validateStockMovementInput({ type: 'in', quantity: 2, reason: 'Supplier delivery' }).error,
-        /Purchase unit cost/,
+        /exactly one/,
     );
 });
 

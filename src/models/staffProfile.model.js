@@ -12,7 +12,7 @@ export const StaffProfile = sequelize.define('StaffProfile', {
     employmentStatus: { type: DataTypes.ENUM('active', 'on_leave', 'inactive'), allowNull: false, defaultValue: 'active' },
     profileImage: { type: DataTypes.TEXT, allowNull: true },
     createdBy: { type: DataTypes.UUID, allowNull: true },
-    employeeId: { type: DataTypes.STRING(40), allowNull: true, unique: true },
+    employeeId: { type: DataTypes.STRING(40), allowNull: true },
     emergencyContact: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
     gender: { type: DataTypes.STRING(20), allowNull: true },
     dateOfBirth: { type: DataTypes.DATEONLY, allowNull: true },
@@ -23,5 +23,10 @@ export const StaffProfile = sequelize.define('StaffProfile', {
     tableName: 'staff_profiles',
     freezeTableName: true,
     timestamps: true,
+    indexes: [{
+        name: 'staff_profiles_branch_employee_id_unique',
+        unique: true,
+        fields: ['branch_id', 'employeeId'],
+    }],
 });
 

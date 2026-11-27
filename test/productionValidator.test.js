@@ -70,15 +70,19 @@ test('recipe validation rejects duplicate stock lines and unknown properties', (
     );
 });
 
-test('cancellation validation requires a reason and valid, unique recovery rows', () => {
-    assert.match(validateCancellationInput({ recoveries: [] }).error, /reason/);
+test('cancellation validation requires a reason and no longer accepts manual recovery quantities', () => {
+    assert.match(validateCancellationInput({}).error, /reason/);
+    assert.deepEqual(validateCancellationInput({
+        reason: 'Batch stopped',
+        notes: 'Return the whole batch to inventory.',
+    }).value, {
+        reason: 'Batch stopped',
+        notes: 'Return the whole batch to inventory.',
+    });
     assert.match(validateCancellationInput({
         reason: 'Batch stopped',
-        recoveries: [
-            { productionIngredientId: uuid, quantityRecovered: 0.5 },
-            { productionIngredientId: uuid, quantityRecovered: 0.25 },
-        ],
-    }).error, /once/);
+        recoveries: [{ productionIngredientId: uuid, quantityRecovered: 0.5 }],
+    }).error, /Unsupported cancellation field/);
 });
 
 test('POS sale validation requires whole plate quantities and a supported payment method', () => {

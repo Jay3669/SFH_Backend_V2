@@ -1,56 +1,12 @@
 import dotenv from 'dotenv';
-import { QueryTypes } from 'sequelize';
 import { createLogger } from './utils/logger.js';
 import { shouldSyncDatabase } from './config/databaseSettings.js';
 import { runPendingMigrations } from './services/migrationRunner.js';
+import { ensureCodeSequences } from './services/codeSequenceService.js';
 
 dotenv.config();
 
 const logger = createLogger('Server');
-const ensureStockCodeSequences = async (database, schema) => {
-    const [state] = await database.sequelize.query(
-        `SELECT
-            to_regclass($1) IS NOT NULL AS category_table_exists,
-            to_regclass($2) IS NOT NULL AS category_sequence_exists,
-            to_regclass($3) IS NOT NULL AS item_table_exists,
-            to_regclass($4) IS NOT NULL AS item_sequence_exists`,
-        {
-            bind: [
-                `${schema}.stock_categories`,
-                `${schema}.stock_category_code_seq`,
-                `${schema}.stock_items`,
-                `${schema}.stock_item_code_seq`,
-            ],
-            type: QueryTypes.SELECT,
-        },
-    );
-    const requiredSequences = [
-        {
-            tableExists: state.category_table_exists,
-            sequenceExists: state.category_sequence_exists,
-            name: 'stock_category_code_seq',
-            migrationCommand: 'npm run migrate:021',
-        },
-        {
-            tableExists: state.item_table_exists,
-            sequenceExists: state.item_sequence_exists,
-            name: 'stock_item_code_seq',
-            migrationCommand: 'npm run migrate:022',
-        },
-    ];
-
-    for (const sequence of requiredSequences) {
-        if (sequence.sequenceExists) continue;
-        if (sequence.tableExists) {
-            throw new Error(
-                `Missing ${schema}.${sequence.name}; run ${sequence.migrationCommand} with DB_SCHEMA=${schema} before starting.`,
-            );
-        }
-        await database.sequelize.query(
-            `CREATE SEQUENCE "${schema}"."${sequence.name}" AS bigint`,
-        );
-    }
-};
 
 const getStartupErrorDetails = (error) => {
     const details = [];
@@ -88,16 +44,16 @@ const startServer = async () => {
     initializeAssociations();
     await database.connect();
     if (shouldSyncDatabase()) {
-        logger.info('Checking stock code sequences.');
-        await ensureStockCodeSequences(database, schema);
+        logger.info('Checking stock and menu code sequences.');
+        await ensureCodeSequences(database, schema);
         logger.info('Synchronizing local database models.');
         await database.sync();
     } else {
         logger.info('Applying pending database migrations.');
         const appliedMigrations = await runPendingMigrations(database.sequelize, schema);
         logger.info('Database migrations are up to date.', { appliedMigrations });
-        logger.info('Checking stock code sequences.');
-        await ensureStockCodeSequences(database, schema);
+        logger.info('Checking stock and menu code sequences.');
+        await ensureCodeSequences(database, schema);
     }
     const { ensureAuthenticationSeedData } = await import('./services/authService.js');
     logger.info('Ensuring authentication roles and permissions.');

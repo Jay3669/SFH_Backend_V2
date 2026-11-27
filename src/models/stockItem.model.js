@@ -28,7 +28,6 @@ const StockItem = sequelize.define(
         sku: {
             type: DataTypes.STRING(64),
             allowNull: true,
-            unique: true,
         },
         expiryDate: {
             type: DataTypes.DATEONLY,
@@ -85,6 +84,7 @@ const StockItem = sequelize.define(
         freezeTableName: true,
         tableName: 'stock_items',
         indexes: [
+            { name: 'stock_items_branch_sku_unique', unique: true, fields: ['branch_id', 'sku'] },
             { name: 'stock_items_category_idx', fields: ['category'] },
             { name: 'stock_items_category_id_idx', fields: ['categoryId'] },
             { name: 'stock_items_active_idx', fields: ['isActive'] },

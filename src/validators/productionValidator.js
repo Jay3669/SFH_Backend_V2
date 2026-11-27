@@ -280,7 +280,7 @@ export const validateYieldInput = (body) => {
 
 export const validateCancellationInput = (body) => {
     if (!isObject(body)) return { error: 'A JSON object is required.' };
-    const unknown = rejectUnknownFields(body, new Set(['reason', 'notes', 'recoveries']), 'cancellation');
+    const unknown = rejectUnknownFields(body, new Set(['reason', 'notes']), 'cancellation');
     if (unknown) return unknown;
     const reason = stringField(body.reason, 'cancellation reason', 255);
     if (reason.error) return reason;
@@ -288,34 +288,10 @@ export const validateCancellationInput = (body) => {
         (typeof body.notes !== 'string' || body.notes.length > 1000)) {
         return { error: 'notes must be at most 1000 characters.' };
     }
-    if (body.recoveries !== undefined &&
-        (!Array.isArray(body.recoveries) || body.recoveries.length > 100)) {
-        return { error: 'recoveries must contain at most 100 entries.' };
-    }
-    const seenIngredients = new Set();
-    const recoveries = [];
-    for (const recovery of body.recoveries || []) {
-        if (!isObject(recovery) ||
-            Object.keys(recovery).some((field) => !['productionIngredientId', 'quantityRecovered'].includes(field)) ||
-            typeof recovery.productionIngredientId !== 'string' || !UUID_PATTERN.test(recovery.productionIngredientId)) {
-            return { error: 'Each recovery requires a valid productionIngredientId and quantityRecovered.' };
-        }
-        if (seenIngredients.has(recovery.productionIngredientId)) {
-            return { error: 'A production ingredient can only be recovered once per cancellation.' };
-        }
-        seenIngredients.add(recovery.productionIngredientId);
-        const quantity = decimal(recovery.quantityRecovered, 3, 99_999_999_999.999, 'quantityRecovered', 0.001);
-        if (quantity.error) return quantity;
-        recoveries.push({
-            productionIngredientId: recovery.productionIngredientId,
-            quantityRecovered: quantity.value,
-        });
-    }
     return {
         value: {
             reason: reason.value,
             notes: typeof body.notes === 'string' ? body.notes.trim() || null : null,
-            recoveries,
         },
     };
 };

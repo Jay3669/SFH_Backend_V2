@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken, authorizeAdmin, authorizePermission } from '../middleware/auth.js';
 import { FORBIDDEN } from '../function/response.js';
+import { requireBranchContext } from '../middleware/branchContext.js';
 import {
     listRolesController,
     updateRolePercentageController,
@@ -21,6 +22,10 @@ import {
 const router = Router();
 
 router.use(authenticateToken);
+router.use('/profit-sharing', requireBranchContext);
+router.use('/admin/profit-sharing', requireBranchContext);
+router.use('/admin/staff', requireBranchContext);
+router.use('/staff', requireBranchContext);
 
 router.get('/roles', authorizePermission('profit_share:view'), listRolesController);
 router.put('/roles/:roleId/profit-percentage', authorizeAdmin, authorizePermission('profit_share:adjust'), updateRolePercentageController);

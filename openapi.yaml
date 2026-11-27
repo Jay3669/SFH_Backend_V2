@@ -2,11 +2,106 @@ openapi: 3.0.3
 info:
   title: Surya Food Hub API
   version: 1.0.0
+  description: >
+    Branch-scoped stock, menu, recipe, production, and staff requests accept
+    the X-Branch-Id header. Non-admin users are limited to their assigned branch.
 servers:
   - url: /api
 security:
   - bearerAuth: []
 paths:
+  /admin/branches:
+    get:
+      summary: List branches available to the authenticated user
+      responses:
+        '200':
+          description: Branch list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Create a branch
+      description: Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchInput'
+      responses:
+        '201':
+          description: Branch created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: A branch with that name or code already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /admin/branches/{branchId}:
+    parameters:
+      - in: path
+        name: branchId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Update branch details
+      description: Admin only; omitted fields retain their existing values.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchUpdate'
+      responses:
+        '200':
+          description: Branch updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Permanently delete an empty branch
+      description: Admin only; branches with dependent records cannot be deleted.
+      responses:
+        '200':
+          description: Branch deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Branch still has dependent records or is the last branch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /admin/production/menu-categories:
     get:
       summary: List menu categories
@@ -413,6 +508,56 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Branch:
+      type: object
+      required: [id, name, code]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        code: { type: string, minLength: 1, maxLength: 20 }
+        address: { type: string, nullable: true, maxLength: 500 }
+        phone: { type: string, nullable: true, maxLength: 30 }
+        email: { type: string, format: email, nullable: true, maxLength: 254 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BranchInput:
+      type: object
+      required: [name, code]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        code: { type: string, minLength: 1, maxLength: 20, pattern: '^[A-Za-z0-9_-]+$' }
+        address: { type: string, nullable: true, maxLength: 500 }
+        phone: { type: string, nullable: true, maxLength: 30 }
+        email: { type: string, format: email, nullable: true, maxLength: 254 }
+    BranchUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        code: { type: string, minLength: 1, maxLength: 20, pattern: '^[A-Za-z0-9_-]+$' }
+        address: { type: string, nullable: true, maxLength: 500 }
+        phone: { type: string, nullable: true, maxLength: 30 }
+        email: { type: string, format: email, nullable: true, maxLength: 254 }
+    BranchResponse:
+      type: object
+      properties:
+        statusCode: { type: integer, example: 200 }
+        status: { type: string, example: SUCCESS }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/Branch'
+    BranchListResponse:
+      type: object
+      properties:
+        statusCode: { type: integer, example: 200 }
+        status: { type: string, example: SUCCESS }
+        message: { type: string }
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Branch'
     ApplicationSettings:
       type: object
       additionalProperties: false

@@ -12,6 +12,7 @@
     "migrate:baseline": "node seeders/runMigrations.js --baseline",
     "migrate:006": "node seeders/applyOneMigration.js migrations/006_recipe_production.sql",
     "migrate:007": "node seeders/applyOneMigration.js migrations/007_menu_categories.sql",
+    "migrate:011": "node seeders/applyOneMigration.js migrations/011_application_settings_and_split_payments.sql",
     "migrate:menu": "npm run migrate:006 && npm run migrate:007 && npm run migrate:024",
     "migrate:014": "node seeders/applyOneMigration.js migrations/014_production_sales_model_alignment.sql",
     "migrate:015": "node seeders/applyOneMigration.js migrations/015_cash_drawers.sql",
@@ -26,6 +27,7 @@
     "migrate:024": "node seeders/applyOneMigration.js migrations/024_menu_codes_and_item_display_order.sql",
     "migrate:025": "node seeders/applyOneMigration.js migrations/025_menu_category_image_url.sql",
     "migrate:026": "node seeders/applyOneMigration.js migrations/026_menu_item_price_repair.sql",
+    "migrate:027": "node seeders/applyOneMigration.js migrations/027_branches.sql",
     "test": "node --test"
   },
   "keywords": [],

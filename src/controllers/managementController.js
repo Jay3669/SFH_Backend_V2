@@ -29,19 +29,19 @@ export const getStaffDashboardSummary = async (req, res, next) => {
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'completed' AND "paymentMethod" = 'upi' THEN "totalAmount" ELSE 0 END), 0)::numeric AS "upiCollection",
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'completed' AND "paymentMethod" = 'card' THEN "totalAmount" ELSE 0 END), 0)::numeric AS "cardCollection"
             FROM "${schema}"."production_sales"
-            WHERE "productionDate" = $1
-        `, { bind: [today], type: QueryTypes.SELECT });
+            WHERE "productionDate" = $1 AND "branch_id" = $2
+        `, { bind: [today, req.branchId], type: QueryTypes.SELECT });
         const [customerCount, expenseRow, stockRow] = await Promise.all([
             Customer.count({ where: { status: 'active' } }),
             database.sequelize.query(`
                 SELECT COALESCE(SUM("amount"), 0)::numeric AS "todayExpenses"
-                FROM "${schema}"."operating_expenses" WHERE "expenseDate" = $1
-            `, { bind: [today], type: QueryTypes.SELECT }),
+                FROM "${schema}"."operating_expenses" WHERE "expenseDate" = $1 AND "branch_id" = $2
+            `, { bind: [today, req.branchId], type: QueryTypes.SELECT }),
             database.sequelize.query(`
                 SELECT COUNT(*)::integer AS "lowStock"
                 FROM "${schema}"."stock_items"
-                WHERE "isActive" = true AND "quantity" <= "reorderLevel"
-            `, { type: QueryTypes.SELECT }),
+                WHERE "isActive" = true AND "quantity" <= "reorderLevel" AND "branch_id" = $1
+            `, { bind: [req.branchId], type: QueryTypes.SELECT }),
         ]);
         return res.status(200).json(OPERATION_SUCCESS('Dashboard summary loaded.', {
             date: today,
@@ -72,10 +72,10 @@ export const getCustomerPurchaseHistory = async (req, res, next) => {
                    )) FILTER (WHERE i."id" IS NOT NULL), '[]') AS "items"
             FROM "${schema}"."production_sales" s
             LEFT JOIN "${schema}"."production_sale_items" i ON i."saleId" = s."id"
-            WHERE s."customerId" = $1
+            WHERE s."customerId" = $1 AND s."branch_id" = $2
             GROUP BY s."id"
             ORDER BY s."createdAt" DESC
-        `, { bind: [req.params.customerId], type: QueryTypes.SELECT });
+        `, { bind: [req.params.customerId, req.branchId], type: QueryTypes.SELECT });
         return res.status(200).json(OPERATION_SUCCESS('Customer purchase history loaded.', sales));
     } catch (error) { return next(error); }
 };
@@ -171,6 +171,7 @@ export const listStaff = async (req, res, next) => {
         }
         const users = await User.findAll({
             where: {
+                branchId: req.branchId,
                 ...(role && roleWhere
                     ? {
                         [Op.or]: [
@@ -232,7 +233,9 @@ export const listStaff = async (req, res, next) => {
 
 export const getStaffById = async (req, res, next) => {
     try {
-        const user = await User.findByPk(req.params.userId);
+        const user = await User.findOne({
+            where: { id: req.params.userId, branchId: req.branchId },
+        });
         if (!user || !STAFF_ROLES.includes(user.role)) return notFound(res, 'Staff account not found.');
         const profile = await StaffProfile.findOne({ where: { userId: user.id } });
         const roleAssignments = await StaffRoleAssignment.findAll({
@@ -325,6 +328,7 @@ export const createStaff = async (req, res, next) => {
             const created = await User.create({
                 firstName, lastName, email: email || null, phoneNumber: phoneNumber || null,
                 passwordHash: await bcrypt.hash(password, 12), role,
+                branchId: req.branchId,
                 status: isInactive ? 'inactive' : 'active',
                 isActive: !isInactive,
             }, { transaction });
@@ -365,7 +369,9 @@ export const createStaff = async (req, res, next) => {
 
 export const updateStaff = async (req, res, next) => {
     try {
-        const user = await User.findByPk(req.params.userId);
+        const user = await User.findOne({
+            where: { id: req.params.userId, branchId: req.branchId },
+        });
         if (!user || !STAFF_ROLES.includes(user.role)) return notFound(res, 'Staff account not found.');
         const { address, department, designation, joiningDate, salary, employmentStatus, profileImage,
             employeeId, emergencyContact, gender, dateOfBirth, alternatePhone, employmentType,
@@ -415,7 +421,9 @@ export const updateStaff = async (req, res, next) => {
 
 export const deleteStaff = async (req, res, next) => {
     try {
-        const user = await User.findByPk(req.params.userId);
+        const user = await User.findOne({
+            where: { id: req.params.userId, branchId: req.branchId },
+        });
         if (!user) return notFound(res, 'Staff account not found.');
         await user.update({ isActive: false, status: 'inactive' });
         await StaffProfile.update({ employmentStatus: 'inactive' }, { where: { userId: user.id } });

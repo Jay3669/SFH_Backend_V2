@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { schema, sequelize } from "../config/db.js";
+import Branch from "./branch.model.js";
 
 export const USER_ROLES = Object.freeze({
     ADMIN: "admin",
@@ -47,6 +48,13 @@ const User = sequelize.define(
             type: DataTypes.STRING(30),
             allowNull: true,
             unique: true,
+        },
+        branchId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: 'branch_id',
+            references: { model: Branch, key: 'id' },
+            onDelete: 'RESTRICT',
         },
         role: {
             type: DataTypes.STRING(30),

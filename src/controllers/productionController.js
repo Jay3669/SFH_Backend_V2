@@ -169,7 +169,7 @@ export const updateProductionYieldController = async (req, res, next) => {
 export const cancelProductionController = async (req, res, next) => {
     try {
         return res.status(200).json(OPERATION_SUCCESS(
-            'Production cancelled; eligible quantities were returned to stock.',
+            'Production cancelled; all deducted ingredient quantities were returned to stock.',
             await cancelProduction(req.params.productionId, req.body, req.user.id),
         ));
     } catch (error) {

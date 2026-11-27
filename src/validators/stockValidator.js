@@ -1,3 +1,8 @@
+import {
+    calculateReceiptTotalCost,
+    calculateReceiptUnitCost,
+} from '../utils/stockCost.js';
+
 const ITEM_CREATE_FIELDS = new Set([
     'name', 'sku', 'categoryId', 'category', 'unit', 'reorderLevel',
     'imageUrl', 'expiryDate', 'displayOrder',
@@ -122,7 +127,10 @@ export const validateStockItemInput = (body, partial = false) => {
 export const validateStockMovementInput = (body) => {
     if (!isObject(body)) return { error: 'A JSON object is required.' };
     const allowedFields = new Set(['type', 'quantity', 'reason']);
-    if (body.type === 'in') allowedFields.add('unitCost');
+    if (body.type === 'in') {
+        allowedFields.add('unitCost');
+        allowedFields.add('totalCost');
+    }
     const unknownField = Object.keys(body).find((field) => !allowedFields.has(field));
     if (unknownField) return { error: `Unsupported stock movement field: ${unknownField}.` };
     if (!['in', 'out', 'count'].includes(body.type)) {
@@ -137,10 +145,30 @@ export const validateStockMovementInput = (body) => {
     );
     if (parsedQuantity.error) return parsedQuantity;
     let unitCost;
+    let totalCost;
     if (body.type === 'in') {
-        const parsedUnitCost = decimalValue(body.unitCost, 2, MAX_COST, 'Purchase unit cost');
-        if (parsedUnitCost.error) return parsedUnitCost;
-        unitCost = parsedUnitCost.value;
+        const hasUnitCost = Object.prototype.hasOwnProperty.call(body, 'unitCost');
+        const hasTotalCost = Object.prototype.hasOwnProperty.call(body, 'totalCost');
+        if (hasUnitCost === hasTotalCost) {
+            return { error: 'Provide exactly one of totalCost or unitCost for a stock receipt.' };
+        }
+        if (hasTotalCost) {
+            const parsedTotalCost = decimalValue(body.totalCost, 2, MAX_COST, 'Purchase total cost');
+            if (parsedTotalCost.error) return parsedTotalCost;
+            totalCost = parsedTotalCost.value;
+            unitCost = calculateReceiptUnitCost(parsedQuantity.value, totalCost);
+            if (unitCost > MAX_COST) {
+                return { error: 'Calculated purchase unit cost exceeds the supported range.' };
+            }
+        } else {
+            const parsedUnitCost = decimalValue(body.unitCost, 2, MAX_COST, 'Purchase unit cost');
+            if (parsedUnitCost.error) return parsedUnitCost;
+            unitCost = parsedUnitCost.value;
+            totalCost = calculateReceiptTotalCost(parsedQuantity.value, unitCost);
+            if (totalCost > MAX_COST) {
+                return { error: 'Calculated purchase total cost exceeds the supported range.' };
+            }
+        }
     }
     if (typeof body.reason !== 'string' || !body.reason.trim() || body.reason.trim().length > 255) {
         return { error: 'Provide a reason of at most 255 characters.' };
@@ -149,7 +177,7 @@ export const validateStockMovementInput = (body) => {
         value: {
             type: body.type,
             quantity: parsedQuantity.value,
-            ...(body.type === 'in' ? { unitCost } : {}),
+            ...(body.type === 'in' ? { unitCost, totalCost } : {}),
             reason: body.reason.trim(),
         },
     };

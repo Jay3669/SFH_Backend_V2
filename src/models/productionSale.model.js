@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import { schema, sequelize } from "../config/db.js";
-import ProductionDay from "./productionDay.model.js";
 
 const ProductionSale = sequelize.define(
     "production_sales",
@@ -27,11 +26,6 @@ const ProductionSale = sequelize.define(
         productionDate: {
             type: DataTypes.DATEONLY,
             allowNull: false,
-            references: {
-                model: ProductionDay,
-                key: "productionDate"
-            },
-            onDelete: "RESTRICT",
         },
         subtotal: {
             type: DataTypes.DECIMAL(14, 2),
